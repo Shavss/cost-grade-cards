@@ -4,224 +4,238 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-
 import msoffcrypto
 import io
 import pandas as pd
-
 import pathlib
 import time
 
-#import credentials
+# Import the decryption password from password.py
 import password
 
-
-class Cost_Grade_Bot:
+class CostGradeBot:
+    """Automation bot for updating cost and grade rates."""
 
     def __init__(self):
+        """Initialize the bot and load necessary data."""
+        # Decrypt Excel file
         decrypted = io.BytesIO()
-
-        with open('221021 Cost and Grade Rates.xlsx', 'rb') as f:
+        with open('<ENCRYPTED_FILE_PATH>', 'rb') as f:
             file = msoffcrypto.OfficeFile(f)
             file.load_key(password=password.file_password)
             file.decrypt(decrypted)
-        global key, df, dic, keys, counter
 
-        df = pd.read_excel(decrypted, "Grade rates for Rapport Entry")
-        dic = df.to_dict()
-        keys = list(dic)
-        del (decrypted)
-
-        # Counting the lengths of "Filters1" column
-        counter = 0
-        for k in range(0, len(dic["Filters1"])):
-            if pd.isna(dic["Filters1"][k]) == False:
-                counter = counter + 1
-            else:
-                pass
-
-        k = 1
-
-        key = keys[k]
+        # Read Excel data
+        self.df = pd.read_excel(decrypted, "<SHEET_NAME>")
+        self.dic = self.df.to_dict()
+        self.keys = list(self.dic)
+        self.counter = sum(1 for val in self.dic["Filters1"].values() if not pd.isna(val))
+        self.k = 1
+        self.key = self.keys[self.k]
 
     def truncate(self, n, decimals=0):
+        """Truncate a number to the specified decimal places."""
         multiplier = 10 ** decimals
         return int(n * multiplier) / multiplier
 
-    class item:
-        def __init__(self, key, input, xpath):
-            self.key = key
-            self.input = input
-            self.xpath = xpath
+class Item:
+    """Class representing an item in the form."""
 
-        def dropdown(self):
-            dropdown = driver.find_element(By.XPATH, self.xpath)
-            dd = Select(dropdown)
-            dd.select_by_visible_text(self.input)
+    def __init__(self, key, input, xpath):
+        self.key = key
+        self.input = input
+        self.xpath = xpath
 
-        def textfill(self):
-            textfield = driver.find_element(By.XPATH, self.xpath)
-            textfield.clear()
-            textfield.send_keys(self.input)
-            #textfield.send_keys(Keys.ENTER)
+    def dropdown(self):
+        """Selects an option from a dropdown menu."""
+        dropdown = driver.find_element(By.XPATH, self.xpath)
+        dd = Select(dropdown)
+        dd.select_by_visible_text(self.input)
 
+    def textfill(self):
+        """Fills a text field."""
+        textfield = driver.find_element(By.XPATH, self.xpath)
+        textfield.clear()
+        textfield.send_keys(self.input)
 
-    class field:
+class Field:
+    """Class representing a field in the form."""
 
-        def __init__(self, xpath):
-            self.xpath = xpath
-        def select(self):
-            select = driver.find_element(By.XPATH, self.xpath)
-            select.click()
+    def __init__(self, xpath):
+        self.xpath = xpath
 
-    def start_cards(self, project):
+    def select(self):
+        """Clicks the field."""
+        select = driver.find_element(By.XPATH, self.xpath)
+        select.click()
 
-        print("initiating bot...")
+def start_cards(self, project):
+    """Starts the process of updating cost and grade rates."""
 
-        PATH = "C:\Program Files (x86)\chromedriver.exe"
-        script_directory = pathlib.Path().absolute()
+    # Initialize the bot
+    outter = CostGradeBot()
 
-        chrome_options = Options()
-        chrome_options.add_argument(f"user-data-dir={script_directory}\\cookies")
-        global driver
-        driver = webdriver.Chrome(PATH, options=chrome_options)
-        chrome_options.add_argument(f"user-data-dir={script_directory}\\cookies")
-        driver.maximize_window()
-        driver.get(LINK)
-        driver.implicitly_wait(4)
+    # Set up Chrome WebDriver
+    PATH = "<CHROME_DRIVER_PATH>"
+    script_directory = pathlib.Path().absolute()
+    chrome_options = Options()
+    chrome_options.add_argument(f"user-data-dir={script_directory}\\cookies")
 
-        # def __init__(self):
+    global driver
+    driver = webdriver.Chrome(PATH, options=chrome_options)
+    chrome_options.add_argument(f"user-data-dir={script_directory}\\cookies")
+    driver.maximize_window()
 
-        # We used cookies in order to log us in into the system so the below part is not necessary
+    driver.get("<RAPPORT3_URL>")
+    driver.implicitly_wait(4)
 
-        # username = credentials.TEST_IO_USERNAME
-        # password = credentials.TEST_IO_PASSWORD
-        # username_input = driver.find_element(By.ID, 'i0116')
-        # username_input.send_keys(username)
-        # username_input.send_keys(Keys.RETURN)
-        # time.sleep(5)
-        # password_input = driver.find_element(By.ID, 'i0118')
-        # password_input.send_keys(password)
-        # password_input.send_keys(Keys.RETURN)
-        # time.sleep(10)
-        # next_button = driver.find_element(By.XPATH, "//input[@type='submit']")
-        # next_button.click()
+    # Switching to an iframe named "iframe1"
+    WebDriverWait(driver, 3).until(EC.frame_to_be_available_and_switch_to_it("iframe1"))
 
-        outter = Cost_Grade_Bot()
+    # Selecting the "Projects" option
+    setting = outter.field("//div[@title='Projects']")
+    setting.select()
 
-        WebDriverWait(driver, 3).until(EC.frame_to_be_available_and_switch_to_it("iframe1"))
+    # Selecting the "Test" option
+    setting1 = outter.field("//div[@title='Test']")
+    setting1.select()
 
-        setting = outter.field("//div[@title='Projects']")
-        setting.select()
+    # These values will depend on the period of which you want to start from
+    j = 3
+    x = 3
 
-        setting1 = outter.field("//div[@title='Test']")
-        setting1.select()
+    # Loop through the DataFrame rows starting from index 3
+    while x < len(outter.df):
 
-        j = 0
-        x = 0
+        driver.switch_to.frame("iframe1")
 
-        while x < len(df):
-            driver.switch_to.frame("iframe1")
+        # Select Branch - DCAL
+        branch = outter.item("DCAL", "DCAL" ,"//select[@id='BranchID']")
+        branch.dropdown()
 
-            # Select Branch - DCAL
-            branch = outter.item("DCAL", "DCAL" ,"//select[@id='BranchID']")
-            branch.dropdown()
+        driver.switch_to.frame("summaryframe")
 
-            driver.switch_to.frame("summaryframe")
+        l = 0
+        k = 1
+        key = outter.keys[k]
 
-            l = 0
-            k = 1
-            key = keys[k]
+        # Filling out the Plan Cost Grade Rates per band
+        while k <= 12:
+            field1 = outter.field(f"//div[@id='DefRates_{l}_GradeCostRate']")
+            field1.select()
 
-            # Filling out the Plan Cost Grade Rates per band
-            while k<=11:
-                field1 = outter.field(f"//div[@id='DefRates_{l}_GradeCostRate']")
-                field1.select()
+            item1 = outter.item(key, outter.truncate(outter.dic[key][j], 2), "//input[@id='Grid_-1_txtGeneric']")
+            item1.textfill()
 
-                item1 = outter.item(key, outter.truncate(dic[key][j], 2), "//input[@id='Grid_-1_txtGeneric']")
-                item1.textfill()
+            k = k + 1
+            key = outter.keys[k]
+            l = l + 1
 
-                k = k + 1
-                key = keys[k]
-                l = l + 1
+        # Filling out the Plan Charge Grade Rates per band
+        l = 0
+        k = 1
+        key = outter.keys[k]
 
-            # Filling out the Plan Charge Grade Rates per band
+        while k <= 12:
+            field2 = outter.field(f"//div[@id='DefRates_{l}_GradeChargeRate']")
+            field2.select()
 
-            l = 0
-            k = 1
-            key = keys[k]
+            profit = outter.dic["Profit"][j]
+            item2 = outter.item(key, outter.dic[key][j] / profit, "//input[@id='Grid_-1_txtGeneric']")
+            item2.textfill()
 
-            while k<=11:
-                field2 = outter.field(f"//div[@id='DefRates_{l}_GradeChargeRate']")
-                field2.select()
+            k = k + 1
+            key = outter.keys[k]
+            l = l + 1
 
-                multiplier = dic["Multiplier"][j]
+        l = 0
+        k = 1
 
-                item2 = outter.item(key, dic[key][j]*multiplier, "//input[@id='Grid_-1_txtGeneric']")
-                item2.textfill()
+        # Checking for NaN in Margin
+        while k <= 12:
+            field3 = outter.field(f"//div[@id='DefRates_{l}_GradeMargin']")
+            field3.select()
 
-                k = k + 1
-                key = keys[k]
-                l = l + 1
+            check = driver.find_element(By.XPATH, "//input[@id='Grid_-1_txtGeneric']")
+            if check.get_attribute("value") == "NaN":
+                item3 = outter.item(key, 0, "//input[@id='Grid_-1_txtGeneric']")
+                item3.textfill()
+            else:
+                pass
 
-            l = 0
-            k = 1
+            k = k + 1
+            l = l + 1
 
-            # Checking for NaN in Margin
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1")
+        driver.switch_to.frame("iframe1")
 
-            while k<=11:
-                field3 = outter.field(f"//div[@id='DefRates_{l}_GradeMargin']")
-                field3.select()
+        # Selecting and clicking the save button
+        save_button = outter.field("//button[@id='btnSave']")
+        save_button.select()
 
-                check = driver.find_element(By.XPATH, "//input[@id='Grid_-1_txtGeneric']")
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1")
 
-                if check.get_attribute("value") == "NaN":
-                    item3 = outter.item(key, 0, "//input[@id='Grid_-1_txtGeneric']")
-                    item3.textfill()
-                else:
-                    pass
+        # Selecting the "Grade Rate Bulk Update" option
+        setting2 = outter.field("//div[@title='Grade Rate Bulk Update']")
+        setting2.select()
 
-                k = k + 1
-                l = l + 1
+        # Switching to nested iframes
+        driver.switch_to.frame("iframe1")
 
-            driver.switch_to.default_content()
-            driver.switch_to.frame("iframe1")
-            driver.switch_to.frame("iframe1")
+        iframe3 = driver.find_element(By.XPATH, "//iframe[@src='/backoffice/settings/GradeBulkUpdate_projectselector.asp']")
+        driver.switch_to.frame(iframe3)
 
-            save_button = outter.field("//button[@id='btnSave']")
-            save_button.select()
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1")
+        driver.switch_to.frame("iframe1")
+        driver.switch_to.frame(iframe3)
 
-            driver.switch_to.default_content()
-            driver.switch_to.frame("iframe1")
+        # Handling project names
+        nr = len(project.split())
 
-            setting2 = outter.field("//div[@title='Grade Rate Bulk Update']")
-            setting2.select()
+        if nr > 1:
+            m = 0
+            projects = project.split()
 
+            while m < len(projects):
+                project_name = outter.field(f"//option[contains(text(), '{projects[m]}')]")
+                project_name.select()
 
-            driver.switch_to.frame("iframe1")
-            iframe3 = driver.find_element(By.XPATH, "//iframe[@src='/backoffice/settings/GradeBulkUpdate_projectselector.asp']")
-            driver.switch_to.frame(iframe3)
+                button = outter.field("//a[@href='javascript:movetoright()']")
+                button.select()
 
-
-            driver.switch_to.default_content()
-            driver.switch_to.frame("iframe1")
-            driver.switch_to.frame("iframe1")
-            driver.switch_to.frame(iframe3)
-
-            #project_name = outter.field(f"//option[text()='{project}']")  # change to the variable with a project name
-            #project_name.select()
-
-            project_name = outter.field(f"//option[contains(text(), '{project}')]")  # change to the variable with a project name
+                m = m + 1
+        else:
+            project_name = outter.field(f"//option[contains(text(), '{project}')]")
             project_name.select()
 
             button = outter.field("//a[@href='javascript:movetoright()']")
             button.select()
 
-            driver.switch_to.default_content()
-            driver.switch_to.frame("iframe1")
-            driver.switch_to.frame("iframe1")
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1")
+        driver.switch_to.frame("iframe1")
 
-            if j == 0:
+        if j == 0:
+            # Clicking buttons
+            button1 = outter.field("//input[@id='GetProjects']")
+            button1.select()
+
+            button2 = outter.field("//input[@id='btnProcess']")
+            button2.select()
+
+            time.sleep(15)
+        else:
+            # Handling dropdown and buttons
+            item5 = outter.item("blank", "Create a new grade card for each project", "//select[@id='runMode']")
+            item5.dropdown()
+
+            try:
+                dropdown1 = driver.find_element(By.XPATH, "//select[@id='startMonth']")
+                dd1 = Select(dropdown1)
+                dd1.select_by_value(outter.dic["Band"][j])
 
                 button1 = outter.field("//input[@id='GetProjects']")
                 button1.select()
@@ -229,30 +243,66 @@ class Cost_Grade_Bot:
                 button2 = outter.field("//input[@id='btnProcess']")
                 button2.select()
 
-            else:
+                time.sleep(15)
+            except:
+                pass
 
-                item5 = item("blank", "Create a new grade card for each project", "//select[@id='runMode']")
-                item5.dropdown()
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1")
 
-                try:
-                    dropdown1 = driver.find_element(By.XPATH, "// select[ @ id = 'startMonth']")
-                    dd1 = Select(dropdown1)
-                    dd1.select_by_value(dic["Band"][j])
+        # Selecting the "Test" option
+        setting1.select()
 
-                    button1 = outter.field("//input[@id='GetProjects']")
-                    button1.select()
+        x = x + 1
+        j = j + 1
 
-                    button2 = outter.field("//input[@id='btnProcess']")
-                    button2.select()
-                except:
-                    pass
+        # Setting the rates to default ones (current)
+        driver.switch_to.frame("iframe1")
 
+        # Select Branch - DCAL
+        branch = outter.item("DCAL", "DCAL", "//select[@id='BranchID']")
+        branch.dropdown()
 
-            driver.switch_to.default_content()
-            driver.switch_to.frame("iframe1")
+        driver.switch_to.frame("summaryframe")
 
-            setting1.select()
-            x = x + 1
-            j = j + 1
+        l = 0
+        k = 1
+        j = 6
+        key = outter.keys[k]
 
+        # Filling out the Plan Cost Grade Rates per band
+        while k <= 11:
+            field1 = outter.field(f"//div[@id='DefRates_{l}_GradeCostRate']")
+            field1.select()
 
+            item1 = outter.item(key, outter.truncate(outter.dic[key][j], 2), "//input[@id='Grid_-1_txtGeneric']")
+            item1.textfill()
+
+            k = k + 1
+            key = outter.keys[k]
+            l = l + 1
+
+        # Filling out the Plan Charge Grade Rates per band
+        l = 0
+        k = 1
+        key = outter.keys[k]
+
+        while k <= 11:
+            field2 = outter.field(f"//div[@id='DefRates_{l}_GradeChargeRate']")
+            field2.select()
+
+            multiplier = outter.dic["Multiplier"][j]
+
+            item2 = outter.item(key, outter.dic[key][j] * multiplier, "//input[@id='Grid_-1_txtGeneric']")
+            item2.textfill()
+
+            k = k + 1
+            key = outter.keys[k]
+            l = l + 1
+
+        driver.switch_to.default_content()
+        driver.switch_to.frame("iframe1") 
+        driver.switch_to.frame("iframe1") 
+        
+        save_button = outter.field("//button[@id='btnSave']") 
+        save_button.select()
