@@ -87,7 +87,7 @@ class Cost_Grade_Bot:
         driver = webdriver.Chrome(PATH, options=chrome_options)
         chrome_options.add_argument(f"user-data-dir={script_directory}\\cookies")
         driver.maximize_window()
-        driver.get("https://davidchipperfield.rapport3.com/backoffice/settingsconsole.asp")
+        driver.get(LINK)
         driver.implicitly_wait(4)
 
         # def __init__(self):
