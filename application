@@ -1,0 +1,47 @@
+import customtkinter as ctk
+from main_adjusted_for_the_app import Cost_Grade_Bot
+
+# Set appearance and color theme
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("dark-blue")
+
+# Create the main GUI window
+root = ctk.CTk()
+root.title("Cost Grade Cards")
+root.resizable(True, True)
+root.geometry("500x300")
+
+# Define functions for closing the app and running the bot
+def close_app():
+    root.destroy()
+
+def run_app():
+    print("Getting project inputs")
+    user_project_name = str(project_entry.get())
+    print("Starting...")
+    bot = Cost_Grade_Bot()
+    bot.start_cards(user_project_name)
+
+# Create a frame to hold GUI elements
+frame = ctk.CTkFrame(master=root)
+frame.pack(pady=20, padx=60, fill="both", expand=True)
+
+# Create a label for the application title
+label = ctk.CTkLabel(master=frame, text="Cost Grade Cards Creation", font=("Grotesque DCA", 20))
+label.pack(pady=12, padx=10)
+
+# Create an entry field for project input
+project1 = ctk.StringVar()
+project_entry = ctk.CTkEntry(master=frame, textvariable=project1, placeholder_text="Project Number")
+project_entry.pack(pady=12, padx=10)
+
+# Create a button to close the application
+button1 = ctk.CTkButton(master=frame, text="Close", command=close_app)
+button1.pack(pady=12, padx=10)
+
+# Create a button to run the bot
+button2 = ctk.CTkButton(master=frame, text="Run", command=run_app)
+button2.pack(pady=12, padx=10)
+
+# Start the main event loop
+root.mainloop()
